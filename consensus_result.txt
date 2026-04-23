@@ -1,0 +1,137 @@
+Consensus Protocols in Blockchain: Proof of Work vs. Proof of Stake
+1. Introduction to Consensus Protocols
+In a decentralised blockchain network, there is no central authority to validate transactions or
+maintain the ledger. Consensus protocols are the rules that allow distributed nodes to agree on 
+the state of the blockchain. They ensure that all copies of the ledger are identical and 
+that malicious actors cannot easily subvert the system.
+
+Why are consensus protocols necessary?
+Double‑spending prevention – without consensus, a user could spend the same digital asset twice.
+
+Byzantine fault tolerance – the system must function even if some nodes are faulty or dishonest.
+
+Decentralisation – no single entity controls the validation process.
+
+Two fundamental types of consensus mechanisms
+A. Proof of Work (PoW)
+Invented for Bitcoin (Satoshi Nakamoto, 2009).
+
+Based on computational work: nodes (miners) compete to solve a cryptographic puzzle.
+
+How it works:
+
+A new block of transactions is prepared.
+A miner changes a small value (the nonce) repeatedly.
+The block’s hash must start with a certain number of zeros (the difficulty).
+The first miner to find such a nonce broadcasts the block.
+Other nodes verify the work and add the block.
+Properties:
+
+Highly secure (attack requires >50% of total network hash power).
+
+Extremely energy‑intensive (high electricity consumption).
+
+Slow (Bitcoin ~10 minutes per block).
+
+B. Proof of Stake (PoS)
+Proposed as an energy‑efficient alternative (Peercoin, 2012; Ethereum switched to PoS in 2022).
+
+Instead of computational work, validators stake their own cryptocurrency as collateral.
+
+How it works:
+
+Anyone can become a validator by locking (staking) coins.
+A selection algorithm chooses a validator to create the next block.
+The probability of being chosen is usually proportional to the stake amount (sometimes with randomness).
+Validators are rewarded with transaction fees; dishonest behaviour leads to loss of stake (slashing).
+Properties:
+
+Very low energy consumption.
+
+Faster finality (blocks can be confirmed in seconds).
+
+Potential for “nothing at stake” problem (solved by slashing conditions).
+
+Other notable consensus protocols
+Delegated Proof of Stake (DPoS) – stakeholders vote for a small set of delegates who validate blocks.
+
+Practical Byzantine Fault Tolerance (PBFT) – used in permissioned blockchains (Hyperledger Fabric).
+
+Proof of Authority (PoA) – a small set of approved authorities validate blocks (high performance, less decentralised).
+
+2. Simplified Blockchain Simulation in Python
+This section provides a complete Python implementation of both PoW and PoS, with line‑by‑line explanations.
+
+2.1 Detailed Line‑by‑Line Explanation
+Imports
+hashlib – provides SHA‑256 hashing needed for block fingerprints.
+
+time.time() – returns current Unix timestamp for block creation.
+
+random.uniform() – used in PoS for weighted random validator selection.
+
+Block class (PoW)
+__init__ – stores index (height), previous block’s hash, timestamp, transaction data,
+ nonce (starting at 0). Then calculates the block’s hash immediately.
+
+calculate_hash – combines all fields (except the hash itself) into a single string, encodes it to bytes, 
+and returns its SHA‑256 hexadecimal digest. 
+This method is deterministic: the same inputs always produce the same hash.
+
+Blockchain class (PoW)
+__init__(self, difficulty=4) – initialises an empty list self.chain, stores the mining difficulty
+ (number of leading zeros required in the hash), and creates the genesis block.
+
+create_genesis_block – instantiates a Block with index 0, previous hash “0”, current time, 
+and data “Genesis Block”. It manually recalculates the hash and appends to the chain.
+
+get_last_block – returns self.chain[-1].
+
+proof_of_work(self, block) – defines target as a string of difficulty zeros (e.g., "000"). 
+While the block’s hash does not start with that target, it increments the nonce and recalculates the hash. 
+When the condition is met, it prints the result.
+
+add_block(self, data) – gets the last block, creates a new Block with index last+1, 
+previous hash = last block’s hash, current time, and the provided data. 
+Then calls proof_of_work to find a valid nonce, and finally appends the block.
+
+is_chain_valid – loops from the second block (index 1). For each block it verifies:
+
+The stored hash equals a freshly computed hash (no tampering).
+The previous_hash of the current block matches the actual hash of the previous block (no broken link).
+PoSBlock class
+Inherits from Block. Adds a validator attribute (the node that created/validated the block). The __init__ calls the parent’s __init__ and then sets self.validator.
+
+PoSBlockchain class
+__init__ – creates an empty chain, an empty stakes dictionary (validator → stake amount), 
+and the genesis block.
+
+create_genesis_block – same as PoW but uses PoSBlock and sets validator = “Genesis”.
+
+select_validator – implements weighted random selection:
+
+If no stakes, raise an exception.
+
+Computes total_stake by summing all stake values.
+
+Generates a random float rand between 0 and total_stake.
+
+Iterates through validators, adding their stake to a cumulative sum. 
+When cumulative >= rand, that validator is chosen.
+
+Fallback returns the first validator (safety net).
+
+add_block(self, data) – gets last block, calls select_validator() to choose a block producer, 
+creates a PoSBlock (nonce stays 0, no mining), calculates its hash exactly once, appends it, 
+and prints the validator’s name and stake.
+
+is_chain_valid – identical to PoW’s validation (hash consistency and linkage). 
+It does not check stake‑related rules for simplicity.
+
+Test Functions
+test_pow() – creates a PoW blockchain with difficulty 3 (fast for demonstration), 
+adds two blocks, prints the chain and validation result.
+
+test_pos() – creates a PoS blockchain, defines three validators with stakes (Alice 50, Bob 30, Charlie 20), 
+adds three blocks, prints each block’s validator (random but weighted by stake) and chain validity.
+
